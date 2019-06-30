@@ -1,0 +1,9 @@
+[package]
+name = "adx_decoder"
+version = "0.1.0"
+authors = ["dospro"]
+edition = "2018"
+
+
+[dependencies]
+cpal = "0.9.0"
