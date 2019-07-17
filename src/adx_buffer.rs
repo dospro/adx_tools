@@ -64,16 +64,13 @@ impl<'a> AdxBuffer<'a> {
     }
 
     fn join_channels_blocks(&self, mut channel_blocks: Vec<Vec<i16>>) -> VecDeque<i16> {
-        // TODO: Support more than 2 channels?
-        if channel_blocks.len() == 1 {
-            return VecDeque::from(channel_blocks.remove(0));
+        let mut deque: VecDeque<i16> = VecDeque::new();
+        for i in 0..32 {
+            for channel in 0..self.channels {
+                deque.push_back(channel_blocks[channel as usize][i as usize]);
+            }
         }
-        channel_blocks[0]
-            .iter()
-            .zip(channel_blocks[1].iter())
-            .flat_map(|pair| {
-                vec![*pair.0, *pair.1]
-            }).collect()
+        deque
     }
 }
 
