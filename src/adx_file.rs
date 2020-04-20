@@ -65,7 +65,10 @@ impl AdxFile {
             file.read(&mut loop_header[..])?;
             has_loop = get_u32(&loop_header[0..4]) != 0;
             loop_start = get_u32(&loop_header[4..8]);
-            loop_end = get_u32(&loop_header[8..12]);
+            loop_end = get_u32(&loop_header[12..16]);
+            if loop_end == 0 {
+                has_loop = false;
+            }
         }
 
         file.seek(SeekFrom::Start(offset as u64 - 2))?;
