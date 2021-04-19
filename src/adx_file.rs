@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 use super::{get_u16, get_u32};
 use super::sample_decoder::Decoder;
 use super::adx_buffer::AdxBuffer;
+use crate::adx_buffer::AdxBufferCopy;
 
 
 pub struct AdxFile {
@@ -27,7 +28,7 @@ pub struct AdxFile {
 }
 
 
-type BoxResult<T> = Result<T, Box<Error>>;
+type BoxResult<T> = Result<T, Box<dyn Error>>;
 
 impl AdxFile {
     pub fn new(filename: &str) -> BoxResult<Self> {
@@ -122,6 +123,24 @@ impl AdxFile {
 
         Ok(AdxBuffer {
             buffer: &self.buffer[..],
+            cache: VecDeque::new(),
+            buffer_offset: 0,
+            channels: self.channel_count,
+            has_loop: self.has_loop,
+            loop_start: self.loop_start,
+            loop_end: self.loop_end,
+            decoders,
+        })
+    }
+
+    pub fn get_into_iterator(&self) -> BoxResult<AdxBufferCopy> {
+        let decoders: Vec<Decoder> = std::iter::repeat(0)
+            .take(self.channel_count as usize)
+            .map(|_n| Decoder::new(self.highpass_frequency as u32, self.sample_rate))
+            .collect();
+
+        Ok(AdxBufferCopy {
+            buffer: self.buffer.clone(),
             cache: VecDeque::new(),
             buffer_offset: 0,
             channels: self.channel_count,

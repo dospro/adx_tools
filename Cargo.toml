@@ -4,12 +4,6 @@ version = "0.1.0"
 authors = ["dospro"]
 edition = "2018"
 
-[workspace]
-members = [
-"afs_extract"
-]
-
-
 [dependencies]
-cpal = "0.10.0"
-afs_extract = { path = "./afs_extract" }
+cpal = "0.13.1"
+clap = "2.33.0"
