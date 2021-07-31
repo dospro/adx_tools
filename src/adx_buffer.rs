@@ -65,7 +65,7 @@ impl AdxBufferCopy {
             .collect()
     }
 
-    fn join_channels_blocks(&self, mut channel_blocks: Vec<Vec<i16>>) -> VecDeque<i16> {
+    fn join_channels_blocks(&self, channel_blocks: Vec<Vec<i16>>) -> VecDeque<i16> {
         let mut deque: VecDeque<i16> = VecDeque::new();
         for i in 0..32 {
             for channel in 0..self.channels {
@@ -172,7 +172,7 @@ impl<'a> AdxBuffer<'a> {
             .collect()
     }
 
-    fn join_channels_blocks(&self, mut channel_blocks: Vec<Vec<i16>>) -> VecDeque<i16> {
+    fn join_channels_blocks(&self, channel_blocks: Vec<Vec<i16>>) -> VecDeque<i16> {
         let mut deque: VecDeque<i16> = VecDeque::new();
         for i in 0..32 {
             for channel in 0..self.channels {
