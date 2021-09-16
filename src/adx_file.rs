@@ -10,7 +10,7 @@ use crate::adx_buffer::AdxBufferCopy;
 
 
 pub struct AdxFile {
-    buffer: Vec<u8>,
+    encoded_buffer: Vec<u8>,
     cri_text: String,
     file_code: u16,
     offset: u16,
@@ -23,8 +23,8 @@ pub struct AdxFile {
     highpass_frequency: u16,
     version: u8,
     has_loop: bool,
-    loop_start: u32,
-    loop_end: u32,
+    loop_byte_start: u32,
+    loop_byte_end: u32,
 }
 
 
@@ -81,7 +81,7 @@ impl AdxFile {
 
 
         return Ok(Self {
-            buffer,
+            encoded_buffer: buffer,
             cri_text,
             file_code,
             offset,
@@ -94,8 +94,8 @@ impl AdxFile {
             highpass_frequency,
             version,
             has_loop,
-            loop_start,
-            loop_end,
+            loop_byte_start: loop_start,
+            loop_byte_end: loop_end,
         });
     }
 
@@ -110,8 +110,8 @@ impl AdxFile {
         println!("Highpass Frequency: {}", self.highpass_frequency);
         println!("Buffer size: {}KB", (self.sample_count as u32 * self.channel_count as u32) / 1024);
         println!("Loop enabled: {}", self.has_loop);
-        println!("Loop Start: {}", self.loop_start);
-        println!("Loop End: {}", self.loop_end);
+        println!("Loop Start: {}", self.loop_byte_start);
+        println!("Loop End: {}", self.loop_byte_end);
         println!("File code: {:X?}", self.file_code);
     }
 
@@ -122,13 +122,13 @@ impl AdxFile {
             .collect();
 
         Ok(AdxBuffer {
-            buffer: &self.buffer[..],
+            encoded_buffer: &self.encoded_buffer[..],
             cache: VecDeque::new(),
             buffer_offset: 0,
             channels: self.channel_count,
             has_loop: self.has_loop,
-            loop_start: self.loop_start,
-            loop_end: self.loop_end,
+            loop_byte_start: self.loop_byte_start,
+            loop_byte_end: self.loop_byte_end,
             decoders,
         })
     }
@@ -140,13 +140,13 @@ impl AdxFile {
             .collect();
 
         Ok(AdxBufferCopy {
-            buffer: self.buffer.clone(),
+            encoded_buffer: self.encoded_buffer.clone(),
             cache: VecDeque::new(),
             buffer_offset: 0,
             channels: self.channel_count,
             has_loop: self.has_loop,
-            loop_start: self.loop_start,
-            loop_end: self.loop_end,
+            loop_byte_start: self.loop_byte_start,
+            loop_byte_end: self.loop_byte_end,
             decoders,
         })
     }

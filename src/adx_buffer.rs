@@ -3,13 +3,13 @@ use std::collections::VecDeque;
 use super::sample_decoder::Decoder;
 
 pub struct AdxBufferCopy {
-    pub(super) buffer: Vec<u8>,
+    pub(super) encoded_buffer: Vec<u8>,
     pub(super) cache: VecDeque<i16>,
     pub(super) buffer_offset: usize,
     pub(super) channels: u8,
     pub(super) has_loop: bool,
-    pub(super) loop_start: u32,
-    pub(super) loop_end: u32,
+    pub(super) loop_byte_start: u32,
+    pub(super) loop_byte_end: u32,
     pub(super) decoders: Vec<Decoder>,
 }
 
@@ -26,21 +26,21 @@ impl AdxBufferCopy {
 
     fn get_next_block(&mut self) -> Option<VecDeque<i16>> {
         let mut channels_blocks: Vec<Vec<i16>> = Vec::new();
-        if self.buffer_offset >= self.buffer.len() {
+        if self.buffer_offset >= self.encoded_buffer.len() {
             return None;
         }
 
         for channel in 0..self.channels {
             // loop_end / 16 parece que queremos sacar en que bloque esta el loop_end
             // el *2 sera el numero de canales?
-            // Por que le agregamos loop_end al restulado?
-            let real_loop_end = self.loop_end as usize + 2 * (self.loop_end as usize / 16);
+            // Por que le agregamos loop_end al resultado?
+            let real_loop_end = self.loop_byte_end as usize + 2 * (self.loop_byte_end as usize / 16);
             if self.has_loop && self.buffer_offset >= real_loop_end {
-                let real_loop_start = self.loop_start as usize + 2 * (self.loop_start as usize / 16);
+                let real_loop_start = self.loop_byte_start as usize + 2 * (self.loop_byte_start as usize / 16);
                 self.buffer_offset = real_loop_start;
             }
 
-            let block: Vec<u8> = self.buffer[self.buffer_offset..self.buffer_offset + 18].to_vec();
+            let block: Vec<u8> = self.encoded_buffer[self.buffer_offset..self.buffer_offset + 18].to_vec();
             self.buffer_offset += 18;
             let decoded_block = self.decode_block(&block, channel);
             channels_blocks.push(decoded_block);
@@ -85,13 +85,13 @@ impl Iterator for AdxBufferCopy {
 }
 
 pub struct AdxBuffer<'a> {
-    pub(super) buffer: &'a [u8],
+    pub(super) encoded_buffer: &'a [u8],
     pub(super) cache: VecDeque<i16>,
     pub(super) buffer_offset: usize,
     pub(super) channels: u8,
     pub(super) has_loop: bool,
-    pub(super) loop_start: u32,
-    pub(super) loop_end: u32,
+    pub(super) loop_byte_start: u32,
+    pub(super) loop_byte_end: u32,
     pub(super) decoders: Vec<Decoder>,
 
 }
@@ -115,9 +115,6 @@ pub struct AdxBuffer<'a> {
     Estos indices son por muestra? Por bytes? O por bloque?
 
     Al parecer son muestras. Pero aqui los quiero convertir a bytes.
-
-
-
 ***/
 
 impl<'a> AdxBuffer<'a> {
@@ -133,21 +130,30 @@ impl<'a> AdxBuffer<'a> {
 
     fn get_next_block(&mut self) -> Option<VecDeque<i16>> {
         let mut channels_blocks: Vec<Vec<i16>> = Vec::new();
-        if self.buffer_offset >= self.buffer.len() {
+        if self.buffer_offset >= self.encoded_buffer.len() {
             return None;
         }
 
         for channel in 0..self.channels {
+            // For loops:
+            // First we need to figure out if we are past the end of a loop.
+            // loop_byte_end gives us the byte index in the encoded buffer where the end is.
+            // Since we decode in blocks (chunks of 18 bytes) we want to know which is the block
+            // where this index sits.
+            // For some reason, the start and end index don't take into account the 2
+            // initial bytes from each block, so at the end it is like if each block is
+            // 16 bytes long instead of 18
+            //
             // loop_end / 16 parece que queremos sacar en que bloque esta el loop_end
-            // el *2 sera el numero de canales?
+            // el *2 sera el numero de canales? 2 samples por byte?
             // Por que le agregamos loop_end al restulado?
-            let real_loop_end = self.loop_end as usize + 2 * (self.loop_end as usize / 16);
+            let real_loop_end = self.loop_byte_end as usize + 2 * (self.loop_byte_end as usize / 16);
             if self.has_loop && self.buffer_offset >= real_loop_end {
-                let real_loop_start = self.loop_start as usize + 2 * (self.loop_start as usize / 16);
+                let real_loop_start = self.loop_byte_start as usize + 2 * (self.loop_byte_start as usize / 16);
                 self.buffer_offset = real_loop_start;
             }
 
-            let block = &self.buffer[self.buffer_offset..self.buffer_offset + 18];
+            let block = &self.encoded_buffer[self.buffer_offset..self.buffer_offset + 18];
             self.buffer_offset += 18;
             let decoded_block = self.decode_block(&block, channel);
             channels_blocks.push(decoded_block);
